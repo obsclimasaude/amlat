@@ -1,11 +1,53 @@
 ---
-title: "temp"
+title: "Observatório Clima e Saúde - América Latina"
 ---
 
-This is a Quarto website.
-
-To learn more about Quarto websites visit <https://quarto.org/docs/websites>.
+```{r}
+# Packages
+library(arrow)
+library(rnaturalearth)
+library(ggplot2)
+```
 
 ```{r}
-1 + 1
+# Load dengue data
+dengue <- read_parquet(file = "data/dengue.parquet")
+
+# Load countries code
+country_list_iso2c <- readRDS(file = "data/country_list_iso2c.rds")
+
+# Load states map
+states <- ne_states(iso_a2 = country_list_iso2c, returnclass = "sf")
+```
+
+```{r}
+# Filter most recent dengue data
+sdengue <- dengue %>%
+  filter(S_res %in% c("Admin0", "Admin1", "Admin2")) %>%
+  group_by(ISO_A0) %>%
+  filter(S_res == max(S_res)) %>%
+  group_by(ISO_A0, RNE_iso_code) %>%
+  filter(calendar_end_date == max(calendar_end_date)) %>%
+  ungroup()
+```
+
+```{r}
+sdengue %>%
+  group_by(ISO_A0) %>%
+  filter(S_res == max(S_res)) %>%
+  ungroup() %>%
+  select(ISO_A0, S_res) %>%
+  distinct() %>% View()
+
+# Match states
+mdengue <- left_join(states, sdengue, by = c("iso_3166_2" = "RNE_iso_code"))
+```
+
+```{r}
+ggplot(mdengue) + geom_sf()
+
+ggplot(mdengue) +
+  geom_sf(aes(fill = dengue_total)) +
+  viridis::scale_fill_viridis()
+  theme_bw()
 ```

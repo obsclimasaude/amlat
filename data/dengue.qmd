@@ -1,0 +1,44 @@
+---
+title: "dengue"
+---
+
+## Packages
+
+```{r}
+library(opendenguedata)
+library(dplyr)
+library(countrycode)
+library(purrr)
+library(arrow)
+```
+
+## Load and save data
+
+```{r}
+country_list_iso2c <- c("AR", "BO", "BR", "CL", "CO",
+                  "CR", "CU", "DO", "EC", "SV",
+                  "GF", "GP", "GT", "HT", "HN",
+                  "MQ", "MX", "NI", "PA", "PY",
+                  "PE", "PR", "BL", "MF", "UY",
+                  "VE")
+
+country_list_iso3c <- map_chr(.x = country_list_iso2c, .f = countrycode, origin = "iso2c", destination = "iso3c")
+
+saveRDS(object = country_list_iso2c, file = "country_list_iso2c.rds")
+
+saveRDS(object = country_list_iso3c, file = "country_list_iso3c.rds")
+```
+
+```{r}
+dengue <- read_data(extract = "temporal") %>%
+  filter(ISO_A0 %in% country_list) %>%
+  collect()
+
+write_parquet(x = dengue, sink = "dengue.parquet")
+```
+
+## Session info
+
+```{r}
+sessionInfo()
+```
